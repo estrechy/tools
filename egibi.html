@@ -1,0 +1,98 @@
+<html>
+<head>
+    <title>Dostupnost schody Egibi</title>
+</head>
+<style>
+body, input, button {
+    font-family: sans-serif;
+    font-size: 1.5rem;
+}
+body {
+    padding: 2rem;
+    background-color: honeydew;
+}
+
+</style>
+<body>
+
+<h1>Dostupnost schody Egibi</h1>
+
+<form>
+    <p><label for="product_inp">Produkt:</label> 
+       <input name="product" id="product_inp">
+       <button>Zjistit dostupnost</button>
+    </p>
+</form>
+
+<table border="1" cellpadding="3" cellspacing="0" class="results">
+    <thead>
+        <tr><th>Produkt</th><th>Dostupnost</th><th>Na sklade</th></tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+const xmlUrl = 'http://egibi.evie.cz/xml/sortiment.xml';
+
+function parseXmlDom(url) {
+    return new Promise((resolve, reject) => {
+        const proxyurl = "https://cors-anywhere.herokuapp.com/";
+        const xhr = new XMLHttpRequest();
+        xhr.onload = () => resolve(xhr.responseXML.documentElement);
+        xhr.onerror = () => reject(`Cannot parse XML: ${url}`);
+        xhr.open('GET', proxyurl + url);
+        xhr.responseType = 'document';
+        xhr.send();
+    });
+}
+
+function showDeliveryInfo(searchText, xml, addResult) {
+    if (!searchText || searchText.length < 3 || !xml) return;
+
+    searchText = searchText.toLowerCase().trim();
+
+    xml.querySelectorAll('PRODUCT').forEach(p => {
+        const nameEl = p.querySelector('PRODUCT');
+        const nameExEl = p.querySelector('EXTENDED_PRODUCTNAME');
+        const codeEl = p.querySelector('EGIBI_CODE');
+        const eanEl = p.querySelector('EAN');
+        if (nameEl) {
+            const name = nameEl.innerHTML.toLowerCase();
+            const nameEx = nameExEl && (nameExEl.innerHTML + '').toLowerCase() || '';
+            const code = codeEl && (codeEl.innerHTML + '').toLowerCase() || '';
+            const ean = eanEl && (eanEl.innerHTML + '').toLowerCase() || '';
+
+            if (name.includes(searchText)
+                || nameEx.includes(searchText)
+                || code.includes(searchText)
+                || ean.includes(searchText)) {
+                addResult(name, 
+                    p.querySelector('PIECES_IN_STOCK').innerHTML, 
+                    p.querySelector('DELIVERY_TEXT').innerHTML);
+            }
+        }
+    });
+}
+
+parseXmlDom(xmlUrl)
+.then(xml => { 
+    const tbody = document.querySelector('table.results tbody');
+    
+    document.querySelector('form').addEventListener('submit', e => {
+        e.preventDefault();
+        tbody.innerHTML = '';
+        const searchText = document.querySelector('form input[name=product]').value;
+        showDeliveryInfo(searchText, xml, addResult);
+    });
+
+    function addResult(name, stock, delivery) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<tr><td>${name}</td><td>${delivery}</td><td>${stock}</td></tr>`;
+        tbody.appendChild(tr);
+    }
+})
+.catch(e => console.error(e));
+</script>
+
+</body>
+</html>
