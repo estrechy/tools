@@ -32,7 +32,7 @@ body {
 </table>
 
 <script>
-const xmlUrl = 'http://egibi.evie.cz/xml/sortiment.xml';
+const xmlUrl = 'http://egibi.evie.cz/xml/sortiment.xml?_r=' + Math.random();
 
 function parseXmlDom(url) {
     return new Promise((resolve, reject) => {
